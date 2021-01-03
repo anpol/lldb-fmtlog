@@ -9,8 +9,8 @@ from typing import Type, Optional, Dict
 
 import lldb
 
-from lldb_command_script_utils.argparse import LLDBArgumentParser
-from lldb_command_script_utils.core import format_command_script_add
+from lldb_script_utils.argparse import LLDBArgumentParser
+from lldb_script_utils.core import format_command_script_add
 from .core import LoggingLevel, LoggingOutput
 
 
