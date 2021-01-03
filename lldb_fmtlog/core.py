@@ -3,6 +3,7 @@
 
 from enum import Enum
 from pathlib import Path
+from typing import Optional
 
 from lldb.formatters import Logger as LoggerModule
 
@@ -28,13 +29,19 @@ class LoggingLevel(Enum):
 class LoggingOutput:
     """A helper for manipulating logging output file path."""
     @staticmethod
-    def get() -> Path:
-        output: str = getattr(LoggerModule, '_lldb_formatters_debug_filename',
-                              'formatters.log')
+    def get() -> Optional[Path]:
+        output: Optional[str] = getattr(LoggerModule,
+                                        '_lldb_formatters_debug_filename',
+                                        None)
+        if not output:
+            return None
         return Path(output)
 
     @staticmethod
-    def set(new_value: Path) -> None:
+    def set(new_value: Optional[Path]) -> None:
         # pylint: disable=protected-access
-        LoggerModule._lldb_formatters_debug_filename = str(
-            new_value.expanduser().resolve())
+        if new_value is None:
+            LoggerModule._lldb_formatters_debug_filename = None
+        else:
+            resolved_path = new_value.expanduser().resolve()
+            LoggerModule._lldb_formatters_debug_filename = str(resolved_path)

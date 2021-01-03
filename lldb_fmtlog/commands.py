@@ -96,7 +96,7 @@ class FormattersLoggerCommand(LLDBArgumentParser.Command):
             LoggingLevel.set(LoggingLevel.FAST)
 
         if output is not None:
-            LoggingOutput.set(output)
+            LoggingOutput.set(None if str(output) == '-' else output)
 
     class DisableSubcommand(LLDBArgumentParser.Subcommand):
         """Argument parser for the `fmtlog disable` subcommand."""
@@ -130,7 +130,7 @@ class FormattersLoggerCommand(LLDBArgumentParser.Command):
         output = LoggingOutput.get()
         print(f'''
 level:  {_lowercase_hyphenated(level.name)}
-output: {output.resolve()}
+output: {'-' if output is None else output.resolve()}
 '''[1:],
               file=command_return,
               end='')

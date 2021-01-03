@@ -16,8 +16,6 @@ def _clean_logger_globals():
 
 
 class LoggerModuleTest(unittest.TestCase):
-    DEFAULT_OUTPUT_PATH = Path('formatters.log')
-
     def setUp(self) -> None:
         _clean_logger_globals()
 
@@ -37,7 +35,7 @@ class LoggingLevelTest(LoggerModuleTest):
 
 class LoggingOutputTest(LoggerModuleTest):
     def test_get(self):
-        self.assertEqual(self.DEFAULT_OUTPUT_PATH, LoggingOutput.get())
+        self.assertIsNone(LoggingOutput.get())
 
     def test_set(self):
         for output_name in ('foo', '../bar', '~/baz'):
@@ -45,6 +43,8 @@ class LoggingOutputTest(LoggerModuleTest):
             LoggingOutput.set(output)
             output = output.expanduser().resolve()
             self.assertEqual(output, LoggingOutput.get())
+        LoggingOutput.set(None)
+        self.assertIsNone(LoggingOutput.get())
 
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@
 import io
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import lldb
 
@@ -102,7 +103,7 @@ Optional arguments:
     def test_fmtlog_enable(self):
         self.debugger.HandleCommand('fmtlog enable')
         self.assertEqual(LoggingLevel.FAST, LoggingLevel.get())
-        self.assertEqual(self.DEFAULT_OUTPUT_PATH, LoggingOutput.get())
+        self.assertIsNone(LoggingOutput.get())
 
     def test_fmtlog_enable_with_level(self):
         self.debugger.HandleCommand('fmtlog enable --level auto-flush')
@@ -116,7 +117,7 @@ Optional arguments:
 
         self.debugger.HandleCommand('fmtlog enable')
         self.assertEqual(LoggingLevel.CALLER_INFO, LoggingLevel.get())
-        self.assertEqual(self.DEFAULT_OUTPUT_PATH, LoggingOutput.get())
+        self.assertIsNone(LoggingOutput.get())
 
     def test_fmtlog_enable_with_empty_level(self):
         self.debugger.HandleCommand('fmtlog enable --level')
@@ -159,7 +160,7 @@ Optional arguments:
         LoggingLevel.set(LoggingLevel.FAST)
         self.debugger.HandleCommand('fmtlog disable')
         self.assertEqual(LoggingLevel.NONE, LoggingLevel.get())
-        self.assertEqual(self.DEFAULT_OUTPUT_PATH, LoggingOutput.get())
+        self.assertIsNone(LoggingOutput.get())
 
     def test_fmtlog_state_help(self):
         self.debugger.HandleCommand('fmtlog state --help')
@@ -175,10 +176,9 @@ Optional arguments:
 
     def test_fmtlog_state(self):
         self.debugger.HandleCommand('fmtlog state')
-        output = self.DEFAULT_OUTPUT_PATH.resolve()
-        self.assertEqual(f'''stdout:
+        self.assertEqual('''stdout:
 level:  none
-output: {output}
+output: -
 ''', self.combined_output)
 
     def test_fmtlog_state_modified(self):
@@ -192,6 +192,19 @@ output: {output}
 level:  auto-flush
 output: {output.resolve()}
 ''', self.combined_output)
+
+    def eval_script(self, script: str) -> None:
+        self.debugger.HandleCommand(f'script {script}')
+
+    def test_fmtlog_output_to_file_auto_flush(self):
+        with TemporaryDirectory() as temp_dir:
+            output = Path(temp_dir).joinpath('formatters.log')
+            self.debugger.HandleCommand(
+                f'fmtlog enable --level=auto-flush --output={output}')
+            self.eval_script('logger = lldb.formatters.Logger.Logger()')
+            self.eval_script('logger.write("something logged")')
+            self.assertEqual('something logged\n', output.read_text())
+            self.assertEqual('', self.combined_output)
 
 
 if __name__ == '__main__':
