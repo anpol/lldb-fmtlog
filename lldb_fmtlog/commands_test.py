@@ -3,8 +3,8 @@
 
 import io
 import unittest
-from pathlib import Path
-from tempfile import TemporaryDirectory
+import pathlib
+import tempfile
 
 import lldb
 
@@ -138,7 +138,7 @@ fmtlog enable: error: argument -l/--level: invalid choice: 'none' \
 
     def test_fmtlog_enable_with_output(self):
         for output_name in ('foo', '../bar', '~/baz'):
-            output = Path(output_name)
+            output = pathlib.Path(output_name)
             self.debugger.HandleCommand(f'fmtlog enable --output {output}')
             self.assertEqual(LoggingLevel.FAST, LoggingLevel.get())
             output = output.expanduser().resolve()
@@ -182,7 +182,7 @@ output: -
 ''', self.combined_output)
 
     def test_fmtlog_state_modified(self):
-        output = Path('foo')
+        output = pathlib.Path('foo')
         LoggingLevel.set(LoggingLevel.AUTO_FLUSH)
         LoggingOutput.set(output)
 
@@ -197,8 +197,8 @@ output: {output.resolve()}
         self.debugger.HandleCommand(f'script {script}')
 
     def test_fmtlog_output_to_file_auto_flush(self):
-        with TemporaryDirectory() as temp_dir:
-            output = Path(temp_dir).joinpath('formatters.log')
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output = pathlib.Path(temp_dir).joinpath('formatters.log')
             self.debugger.HandleCommand(
                 f'fmtlog enable --level=auto-flush --output={output}')
             self.eval_script('logger = lldb.formatters.Logger.Logger()')

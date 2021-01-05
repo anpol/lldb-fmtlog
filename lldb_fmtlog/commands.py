@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 """Argument parser for a command."""
 
-from argparse import ArgumentParser
-from collections import OrderedDict
+import argparse
+import collections
+import pathlib
 from gettext import gettext as _
-from pathlib import Path
 from typing import Type, Optional, Dict
 
 import lldb
 
-from lldb_script_utils.argparse import LLDBArgumentParser
-from lldb_script_utils.core import format_command_script_add
-from .core import LoggingLevel, LoggingOutput
+from lldb_script_utils import lldb_commands
+from lldb_script_utils import debugger_utils
+from lldb_fmtlog.core import LoggingLevel, LoggingOutput
 
 
 def _lowercase_hyphenated(name: str) -> str:
@@ -22,7 +22,7 @@ def _uppercase_underscored(name: str) -> str:
     return name.upper().replace('-', '_')
 
 
-LOGGING_LEVELS: Dict[str, int] = OrderedDict(
+LOGGING_LEVELS: Dict[str, int] = collections.OrderedDict(
     (_lowercase_hyphenated(x.name), x.value) for x in LoggingLevel)
 
 POSITIVE_LOGGING_LEVEL_NAMES = [
@@ -46,18 +46,18 @@ def lldb_init_submodule(debugger: lldb.SBDebugger) -> None:
     FormattersLoggerCommand.lldb_init_class(debugger)
 
 
-class FormattersLoggerCommand(LLDBArgumentParser.Command):
+class FormattersLoggerCommand(lldb_commands.LLDBCommand):
     """Argument parser for the `fmtlog` command with subcommands."""
     NAME = 'fmtlog'
     HELP = _('Commands for manipulating formatters logging facility.')
 
     @classmethod
     def lldb_init_class(cls, debugger: lldb.SBDebugger) -> None:
-        debugger.HandleCommand(format_command_script_add(cls.NAME, cls))
+        debugger_utils.handle_command_script_add(debugger, cls.NAME, cls)
 
     def create_args_parser(self, debugger: lldb.SBDebugger,
-                           bindings: dict) -> ArgumentParser:
-        parser = LLDBArgumentParser(self.NAME, self.HELP)
+                           bindings: dict) -> lldb_commands.LLDBArgumentParser:
+        parser = lldb_commands.LLDBArgumentParser(self.NAME, self.HELP)
         parser.add_subcommands(
             (self.EnableSubcommand, self._on_enable),
             (self.DisableSubcommand, self._on_disable),
@@ -65,14 +65,15 @@ class FormattersLoggerCommand(LLDBArgumentParser.Command):
         )
         return parser
 
-    class EnableSubcommand(LLDBArgumentParser.Subcommand):
+    class EnableSubcommand(lldb_commands.LLDBSubcommand):
         """Argument parser for the `fmtlog enable` subcommand."""
         NAME = 'enable'
         HELP = _('Enable logging.')
 
         @classmethod
         def create_args_subparser(
-                cls, add_subparser: Type[ArgumentParser]) -> ArgumentParser:
+            cls, add_subparser: Type[argparse.ArgumentParser]
+        ) -> argparse.ArgumentParser:
             subparser = add_subparser(cls.NAME, cls.HELP)
             subparser.add_argument(
                 '-l',
@@ -84,12 +85,12 @@ class FormattersLoggerCommand(LLDBArgumentParser.Command):
             subparser.add_argument('-o',
                                    '--output',
                                    metavar=_('<file>'),
-                                   type=Path,
+                                   type=pathlib.Path,
                                    help=_('Output file path.'))
             return subparser
 
     @staticmethod
-    def _on_enable(level: Optional[str], output: Optional[Path], **_):
+    def _on_enable(level: Optional[str], output: Optional[pathlib.Path], **_):
         if level is not None:
             LoggingLevel.set(LoggingLevel[_uppercase_underscored(level)])
         elif LoggingLevel.get() == LoggingLevel.NONE:
@@ -98,14 +99,15 @@ class FormattersLoggerCommand(LLDBArgumentParser.Command):
         if output is not None:
             LoggingOutput.set(None if str(output) == '-' else output)
 
-    class DisableSubcommand(LLDBArgumentParser.Subcommand):
+    class DisableSubcommand(lldb_commands.LLDBSubcommand):
         """Argument parser for the `fmtlog disable` subcommand."""
         NAME = 'disable'
         HELP = _('Disable logging.')
 
         @classmethod
         def create_args_subparser(
-                cls, add_subparser: Type[ArgumentParser]) -> ArgumentParser:
+            cls, add_subparser: Type[argparse.ArgumentParser]
+        ) -> argparse.ArgumentParser:
             subparser = add_subparser(cls.NAME, cls.HELP)
             return subparser
 
@@ -113,14 +115,15 @@ class FormattersLoggerCommand(LLDBArgumentParser.Command):
     def _on_disable(**_):
         LoggingLevel.set(LoggingLevel.NONE)
 
-    class StateSubcommand(LLDBArgumentParser.Subcommand):
+    class StateSubcommand(lldb_commands.LLDBSubcommand):
         """Argument parser for the `fmtlog state` subcommand."""
         NAME = 'state'
         HELP = _('Show the state of the logging facility.')
 
         @classmethod
         def create_args_subparser(
-                cls, add_subparser: Type[ArgumentParser]) -> ArgumentParser:
+            cls, add_subparser: Type[argparse.ArgumentParser]
+        ) -> argparse.ArgumentParser:
             subparser = add_subparser(cls.NAME, cls.HELP)
             return subparser
 

@@ -3,7 +3,7 @@
 
 import lldb
 
-from . import commands
+from lldb_fmtlog import commands
 
 
 def __lldb_init_module(debugger: lldb.SBDebugger, _: dict) -> None:
